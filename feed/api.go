@@ -15,7 +15,13 @@ func LatestEvents() ([]Event, error) {
 	if err != nil {
 		return []Event{}, err
 	}
-	return Parse(rawFeed), nil
+
+	events, err := Parse(rawFeed)
+	if err != nil {
+		return []Event{}, err
+	}
+
+	return events, nil
 
 }
 

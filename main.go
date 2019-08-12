@@ -17,6 +17,8 @@ func Update(ticker *time.Ticker) {
 			continue
 		}
 		latestEvent := latestEvents[len(latestEvents)-1]
+
+		// TODO: This might swallow events if there were multiple new events
 		if latestEvent.Timestamp != currentEvent.Timestamp {
 			log.Printf("%s", latestEvent)
 			currentEvent = latestEvent

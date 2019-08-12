@@ -1,8 +1,8 @@
 package feed
 
 import (
-	"fmt"
 	"github.com/mmcdole/gofeed"
+	"log"
 	"strings"
 )
 
@@ -13,16 +13,19 @@ type Event struct {
 	Description string
 }
 
-func Parse(rawFeed string) []Event {
+func Parse(rawFeed string) ([]Event, error) {
 	parser := gofeed.NewParser()
 	feed, err := parser.ParseString(rawFeed)
 	if err != nil {
-		fmt.Println(err)
+		log.Printf("Failed to parse events: %s", err)
+		return []Event{}, err
 	}
 
 	events := []Event{}
 
-	for _, item := range feed.Items {
+	//The latest events are first so reverse the order
+	for i := len(feed.Items) - 1; i >= 0; i-- {
+		item := feed.Items[i]
 		event := Event{
 			Type:        strings.Split(item.Title, ", ")[1],
 			Location:    strings.Split(item.Title, ", ")[0],
@@ -32,5 +35,5 @@ func Parse(rawFeed string) []Event {
 		events = append(events, event)
 	}
 
-	return events
+	return events, nil
 }
