@@ -9,7 +9,17 @@ import (
 
 const feedUrl string = "http://www.peto-media.fi/tiedotteet/rss.xml"
 
-func FetchFeed() (string, error) {
+func LatestEvents() ([]Event, error) {
+
+	rawFeed, err := fetchFeed()
+	if err != nil {
+		return []Event{}, err
+	}
+	return Parse(rawFeed), nil
+
+}
+
+func fetchFeed() (string, error) {
 
 	resp, err := http.Get(feedUrl)
 	if err != nil {
