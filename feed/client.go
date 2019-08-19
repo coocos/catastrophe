@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
 const feedUrl string = "http://www.peto-media.fi/tiedotteet/rss.xml"
@@ -22,6 +23,24 @@ func LatestEvents() ([]Event, error) {
 	}
 
 	return events, nil
+
+}
+
+func EventsSince(since time.Time) ([]Event, error) {
+
+	events, err := LatestEvents()
+	if err != nil {
+		return []Event{}, err
+	}
+
+	eventsSince := []Event{}
+	for _, event := range events {
+		if event.Timestamp.After(since) {
+			eventsSince = append(eventsSince, event)
+		}
+	}
+
+	return eventsSince, nil
 
 }
 

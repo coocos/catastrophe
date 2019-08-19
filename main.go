@@ -8,20 +8,22 @@ import (
 
 func Update(ticker *time.Ticker) {
 
-	currentEvent := feed.Event{}
+	allEvents, err := feed.LatestEvents()
+	if err != nil {
+		log.Printf("Failed to retrieve starting event %s", err)
+	}
+	latestEvent := allEvents[len(allEvents)-1]
+	log.Printf("%s", latestEvent)
 
 	for _ = range ticker.C {
-		latestEvents, err := feed.LatestEvents()
+		newEvents, err := feed.EventsSince(latestEvent.Timestamp)
+		log.Printf("%d new event(s)", len(newEvents))
 		if err != nil {
 			log.Printf("Failed to retrieve event feed: %s", err)
 			continue
 		}
-		latestEvent := latestEvents[len(latestEvents)-1]
-
-		// TODO: This might swallow events if there were multiple new events
-		if latestEvent.Timestamp != currentEvent.Timestamp {
-			log.Printf("%s", latestEvent)
-			currentEvent = latestEvent
+		for _, event := range newEvents {
+			log.Printf("%s", event)
 		}
 	}
 

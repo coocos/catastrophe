@@ -10,7 +10,7 @@ import (
 type Event struct {
 	Type        string
 	Location    string
-	Timestamp   time.Time
+	Timestamp   time.Time //FIXME: Bad name, it's not a timestamp since it's not a string anymore
 	Description string
 }
 
