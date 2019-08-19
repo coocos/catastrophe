@@ -28,7 +28,7 @@ func Parse(rawFeed string) ([]Event, error) {
 		item := feed.Items[i]
 		event := Event{
 			Type:        strings.Split(item.Title, ", ")[1],
-			Location:    strings.Split(item.Title, ", ")[0],
+			Location:    strings.Split(strings.Split(item.Title, ", ")[0], "/")[0],
 			Timestamp:   strings.Split(item.Description, " ")[1],
 			Description: item.Description,
 		}

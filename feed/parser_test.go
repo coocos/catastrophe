@@ -614,13 +614,16 @@ func TestParse(t *testing.T) {
     </channel>
     </rss>`
 
-	events := Parse(feed)
+	events, err := Parse(feed)
+	if err != nil {
+		t.Errorf("Failed to parse feed due to: %s", err)
+	}
 	if len(events) != 100 {
 		t.Errorf("Feed should contain %d items, contained %d", 100, len(events))
 	}
 	event := events[0]
-	if event.Location != "Liperi/Liperi" {
-		t.Errorf("Feed item location %s to be %s", event.Location, "Liperi/Liperi")
+	if event.Location != "Pori" {
+		t.Errorf("Feed item location is %s but should be %s", event.Location, "Pori/Björneborg")
 	}
 
 }
