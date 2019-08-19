@@ -4,13 +4,25 @@ import (
 	"github.com/mmcdole/gofeed"
 	"log"
 	"strings"
+	"time"
 )
 
 type Event struct {
 	Type        string
 	Location    string
-	Timestamp   string //TODO: Replace with a date type
+	Timestamp   time.Time
 	Description string
+}
+
+func parseTimestamp(timestamp string) time.Time {
+
+	date, err := time.Parse(time.RFC1123Z, timestamp)
+	if err != nil {
+		log.Printf("Failed to parse timestamp: %s", err)
+		date = time.Now()
+	}
+	return date
+
 }
 
 func Parse(rawFeed string) ([]Event, error) {
@@ -29,7 +41,7 @@ func Parse(rawFeed string) ([]Event, error) {
 		event := Event{
 			Type:        strings.Split(item.Title, ", ")[1],
 			Location:    strings.Split(strings.Split(item.Title, ", ")[0], "/")[0],
-			Timestamp:   strings.Split(item.Description, " ")[1],
+			Timestamp:   parseTimestamp(item.Published),
 			Description: item.Description,
 		}
 		events = append(events, event)

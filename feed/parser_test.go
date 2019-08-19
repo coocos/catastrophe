@@ -1,6 +1,8 @@
 package feed
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestParse(t *testing.T) {
 
@@ -623,7 +625,11 @@ func TestParse(t *testing.T) {
 	}
 	event := events[0]
 	if event.Location != "Pori" {
-		t.Errorf("Feed item location is %s but should be %s", event.Location, "Pori/Björneborg")
+		t.Errorf("Event location is %s but should be %s", event.Location, "Pori")
+	}
+	expectedTime := "2019-08-07 11:35:23 +0200 +0200"
+	if event.Timestamp.String() != expectedTime {
+		t.Errorf("Event time is %s but should be %s", event.Timestamp.String(), expectedTime)
 	}
 
 }
