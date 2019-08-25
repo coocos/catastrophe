@@ -18,7 +18,7 @@ func Update(ticker *time.Ticker, eventStream chan<- *feed.Event) {
 	eventStream <- &latestEvent
 
 	for _ = range ticker.C {
-		newEvents, err := client.EventsSince(latestEvent.Timestamp)
+		newEvents, err := client.EventsSince(latestEvent.Time)
 		log.Printf("%d new event(s)", len(newEvents))
 		if err != nil {
 			log.Printf("Failed to retrieve event feed: %s", err)

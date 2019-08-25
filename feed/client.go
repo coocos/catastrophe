@@ -45,7 +45,7 @@ func (client *Client) EventsSince(since time.Time) ([]Event, error) {
 
 	eventsSince := []Event{}
 	for _, event := range events {
-		if event.Timestamp.After(since) {
+		if event.Time.After(since) {
 			eventsSince = append(eventsSince, event)
 		}
 	}

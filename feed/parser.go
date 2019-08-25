@@ -10,7 +10,7 @@ import (
 type Event struct {
 	Type        string
 	Location    string
-	Timestamp   time.Time //FIXME: Bad name, it's not a timestamp since it's not a string anymore
+	Time        time.Time
 	Description string
 }
 
@@ -41,7 +41,7 @@ func Parse(rawFeed string) ([]Event, error) {
 		event := Event{
 			Type:        strings.Split(item.Title, ", ")[1],
 			Location:    strings.Split(strings.Split(item.Title, ", ")[0], "/")[0],
-			Timestamp:   parseTimestamp(item.Published),
+			Time:        parseTimestamp(item.Published),
 			Description: item.Description,
 		}
 		events = append(events, event)

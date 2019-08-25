@@ -628,8 +628,8 @@ func TestParse(t *testing.T) {
 		t.Errorf("Event location is %s but should be %s", event.Location, "Pori")
 	}
 	expectedTime := "2019-08-07 11:35:23 +0200 +0200"
-	if event.Timestamp.String() != expectedTime {
-		t.Errorf("Event time is %s but should be %s", event.Timestamp.String(), expectedTime)
+	if event.Time.String() != expectedTime {
+		t.Errorf("Event time is %s but should be %s", event.Time.String(), expectedTime)
 	}
 
 }
