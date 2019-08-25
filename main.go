@@ -2,11 +2,32 @@ package main
 
 import (
 	"github.com/coocos/catastrophe/feed"
+	"github.com/gorilla/websocket"
 	"log"
+	"net/http"
+	"sync"
 	"time"
 )
 
-func Update(ticker *time.Ticker, eventStream chan<- *feed.Event) {
+var eventStream = make(chan *feed.Event)
+var upgrader = websocket.Upgrader{}
+var clients = make(map[*websocket.Conn]bool)
+var clientMutex = &sync.Mutex{}
+
+func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("Failed to upgrade WebSocket connection")
+		return
+	}
+	log.Printf("New client connected")
+
+	clientMutex.Lock()
+	clients[conn] = true
+	clientMutex.Unlock()
+}
+
+func UpdateEvents(ticker *time.Ticker, eventStream chan<- *feed.Event) {
 
 	client := feed.NewClient()
 
@@ -34,15 +55,30 @@ func Update(ticker *time.Ticker, eventStream chan<- *feed.Event) {
 
 }
 
-func main() {
-
-	eventStream := make(chan *feed.Event)
-
-	ticker := time.NewTicker(60 * 1000 * time.Millisecond)
-	go Update(ticker, eventStream)
+func BroadcastEvents(eventStream <-chan *feed.Event) {
 
 	for event := range eventStream {
 		log.Printf("%s", event)
+		clientMutex.Lock()
+		log.Printf("Broadcasting event to %d clients", len(clients))
+		for client := range clients {
+			err := client.WriteJSON(event)
+			if err != nil {
+				delete(clients, client)
+			}
+		}
+		clientMutex.Unlock()
 	}
+}
+
+func main() {
+
+	ticker := time.NewTicker(60 * 1000 * time.Millisecond)
+	go UpdateEvents(ticker, eventStream)
+	go BroadcastEvents(eventStream)
+
+	http.HandleFunc("/websocket", WebSocketHandler)
+	http.Handle("/", http.FileServer(http.Dir("./static")))
+	http.ListenAndServe("localhost:8080", nil)
 
 }
