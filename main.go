@@ -6,14 +6,14 @@ import (
 	"time"
 )
 
-func Update(ticker *time.Ticker) {
+func Update(ticker *time.Ticker, eventStream chan *feed.Event) {
 
 	allEvents, err := feed.LatestEvents()
 	if err != nil {
 		log.Printf("Failed to retrieve starting event %s", err)
 	}
 	latestEvent := allEvents[len(allEvents)-1]
-	log.Printf("%s", latestEvent)
+	eventStream <- &latestEvent
 
 	for _ = range ticker.C {
 		newEvents, err := feed.EventsSince(latestEvent.Timestamp)
@@ -23,7 +23,10 @@ func Update(ticker *time.Ticker) {
 			continue
 		}
 		for _, event := range newEvents {
-			log.Printf("%s", event)
+			eventStream <- &event
+		}
+		if len(newEvents) > 0 {
+			latestEvent = newEvents[len(newEvents)-1]
 		}
 	}
 
@@ -31,11 +34,13 @@ func Update(ticker *time.Ticker) {
 
 func main() {
 
+	eventStream := make(chan *feed.Event)
+
 	ticker := time.NewTicker(60 * 1000 * time.Millisecond)
+	go Update(ticker, eventStream)
 
-	go Update(ticker)
-
-	time.Sleep(60 * 10000 * time.Millisecond)
-	ticker.Stop()
+	for event := range eventStream {
+		log.Printf("%s", event)
+	}
 
 }
