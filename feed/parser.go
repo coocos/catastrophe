@@ -8,10 +8,10 @@ import (
 )
 
 type Event struct {
-	Type        string
-	Location    string
-	Time        time.Time
-	Description string
+	Type        string    `json:"type"`
+	Location    string    `json:"location"`
+	Time        time.Time `json:"time"`
+	Description string    `json:"description"`
 }
 
 func parseTimestamp(timestamp string) time.Time {
