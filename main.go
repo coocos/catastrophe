@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func Update(ticker *time.Ticker, eventStream chan *feed.Event) {
+func Update(ticker *time.Ticker, eventStream chan<- *feed.Event) {
 
 	client := feed.NewClient()
 
