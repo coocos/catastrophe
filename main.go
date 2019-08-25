@@ -13,6 +13,7 @@ var eventStream = make(chan *feed.Event)
 var upgrader = websocket.Upgrader{}
 var clients = make(map[*websocket.Conn]bool)
 var clientMutex = &sync.Mutex{}
+var latestEvent = feed.Event{}
 
 func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -25,6 +26,8 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	clientMutex.Lock()
 	clients[conn] = true
 	clientMutex.Unlock()
+
+	conn.WriteJSON(latestEvent)
 }
 
 func UpdateEvents(ticker *time.Ticker, eventStream chan<- *feed.Event) {
@@ -35,7 +38,7 @@ func UpdateEvents(ticker *time.Ticker, eventStream chan<- *feed.Event) {
 	if err != nil {
 		log.Printf("Failed to retrieve starting event %s", err)
 	}
-	latestEvent := allEvents[len(allEvents)-1]
+	latestEvent = allEvents[len(allEvents)-1]
 	eventStream <- &latestEvent
 
 	for _ = range ticker.C {
@@ -64,6 +67,7 @@ func BroadcastEvents(eventStream <-chan *feed.Event) {
 		for client := range clients {
 			err := client.WriteJSON(event)
 			if err != nil {
+				log.Printf("Dropping client")
 				delete(clients, client)
 			}
 		}
