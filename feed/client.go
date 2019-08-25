@@ -10,9 +10,19 @@ import (
 
 const feedUrl string = "http://www.peto-media.fi/tiedotteet/rss.xml"
 
-func LatestEvents() ([]Event, error) {
+type Client struct {
+	baseUrl string
+}
 
-	rawFeed, err := fetchFeed()
+func NewClient() *Client {
+	return &Client{
+		feedUrl,
+	}
+}
+
+func (client *Client) LatestEvents() ([]Event, error) {
+
+	rawFeed, err := client.fetchFeed()
 	if err != nil {
 		return []Event{}, err
 	}
@@ -26,9 +36,9 @@ func LatestEvents() ([]Event, error) {
 
 }
 
-func EventsSince(since time.Time) ([]Event, error) {
+func (client *Client) EventsSince(since time.Time) ([]Event, error) {
 
-	events, err := LatestEvents()
+	events, err := client.LatestEvents()
 	if err != nil {
 		return []Event{}, err
 	}
@@ -44,9 +54,9 @@ func EventsSince(since time.Time) ([]Event, error) {
 
 }
 
-func fetchFeed() (string, error) {
+func (client *Client) fetchFeed() (string, error) {
 
-	resp, err := http.Get(feedUrl)
+	resp, err := http.Get(client.baseUrl)
 	if err != nil {
 		log.Println("HTTP request to retrieve feed failed")
 		return "", err
