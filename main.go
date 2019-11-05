@@ -82,7 +82,7 @@ func main() {
 	go BroadcastEvents(eventStream)
 
 	http.HandleFunc("/websocket", WebSocketHandler)
-	http.Handle("/", http.FileServer(http.Dir("./static")))
+	http.Handle("/", http.FileServer(http.Dir("./frontend/dist")))
 	http.ListenAndServe("localhost:8080", nil)
 
 }
