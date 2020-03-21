@@ -56,6 +56,9 @@ func updateEvents(ticker *time.Ticker, eventStream chan<- *feed.Event) {
 			}).Error("Failed to retrieve event feed")
 			continue
 		}
+		if len(newEvents) == 0 {
+			continue
+		}
 
 		log.WithFields(log.Fields{
 			"events": len(newEvents),
