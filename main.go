@@ -17,22 +17,24 @@ var clients = make(map[*websocket.Conn]bool)
 var clientMutex = &sync.Mutex{}
 var latestEvent = feed.Event{}
 
-func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
+func webSocketHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Warn("Failed to upgrade WebSocket connection")
 		return
 	}
-	log.Info("New client connected")
 
 	clientMutex.Lock()
+	log.WithFields(log.Fields{
+		"connected_clients": len(clients),
+	}).Info("New client connected")
 	clients[conn] = true
 	clientMutex.Unlock()
 
 	conn.WriteJSON(latestEvent)
 }
 
-func UpdateEvents(ticker *time.Ticker, eventStream chan<- *feed.Event) {
+func updateEvents(ticker *time.Ticker, eventStream chan<- *feed.Event) {
 
 	client := feed.NewClient()
 
@@ -68,7 +70,7 @@ func UpdateEvents(ticker *time.Ticker, eventStream chan<- *feed.Event) {
 
 }
 
-func BroadcastEvents(eventStream <-chan *feed.Event) {
+func broadcastEvents(eventStream <-chan *feed.Event) {
 
 	for event := range eventStream {
 		clientMutex.Lock()
@@ -98,11 +100,10 @@ func main() {
 	configureLogger()
 
 	ticker := time.NewTicker(60 * 1000 * time.Millisecond)
-	go UpdateEvents(ticker, eventStream)
-	go BroadcastEvents(eventStream)
+	go updateEvents(ticker, eventStream)
+	go broadcastEvents(eventStream)
 
-	http.HandleFunc("/websocket", WebSocketHandler)
-	http.Handle("/", http.FileServer(http.Dir("./frontend/dist")))
+	http.HandleFunc("/websocket", webSocketHandler)
 	http.ListenAndServe("localhost:8080", nil)
 
 }
