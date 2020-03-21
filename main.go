@@ -42,11 +42,11 @@ func updateEvents(ticker *time.Ticker, eventStream chan<- *feed.Event) {
 	if err != nil {
 		log.WithFields(log.Fields{
 			"err": err,
-		}).Error("Failed to retrieve starting event")
-	} else {
-		latestEvent = allEvents[len(allEvents)-1]
-		eventStream <- &latestEvent
+		}).Fatal("Failed to retrieve starting event")
 	}
+
+	latestEvent = allEvents[len(allEvents)-1]
+	eventStream <- &latestEvent
 
 	for _ = range ticker.C {
 		newEvents, err := client.EventsSince(latestEvent.Time)
