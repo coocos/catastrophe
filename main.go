@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -102,11 +104,19 @@ func main() {
 
 	configureLogger()
 
+	host := flag.String("host", "localhost", "host to use")
+	port := flag.Int("port", 8000, "port to use")
+	flag.Parse()
+
 	ticker := time.NewTicker(60 * 1000 * time.Millisecond)
 	go updateEvents(ticker, eventStream)
 	go broadcastEvents(eventStream)
 
 	http.HandleFunc("/websocket", webSocketHandler)
-	http.ListenAndServe("localhost:8080", nil)
+	log.WithFields(log.Fields{
+		"host": *host,
+		"port": *port,
+	}).Info("Starting server")
+	http.ListenAndServe(fmt.Sprintf("%s:%d", *host, *port), nil)
 
 }
