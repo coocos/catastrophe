@@ -1,10 +1,11 @@
 package feed
 
 import (
-	"github.com/mmcdole/gofeed"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/mmcdole/gofeed"
 )
 
 type Event struct {

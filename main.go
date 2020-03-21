@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/coocos/catastrophe/feed"
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/coocos/catastrophe/feed"
+	"github.com/gorilla/websocket"
 )
 
 var eventStream = make(chan *feed.Event)
