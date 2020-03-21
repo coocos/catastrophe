@@ -1,6 +1,6 @@
-FROM golang:alpine
+FROM golang:alpine AS build-environment
 
-WORKDIR app/
+WORKDIR /app/
 
 # Install dependencies first for cache optimization
 COPY go.mod go.sum ./
@@ -10,6 +10,10 @@ COPY . .
 
 RUN go build -o catastrophe .
 
-EXPOSE 8080
+FROM alpine AS runtime-environment
 
-CMD ["./catastrophe"]
+COPY --from=build-environment ./app/catastrophe ./app/catastrophe
+
+EXPOSE 8000
+
+CMD ["./app/catastrophe"]
