@@ -1,13 +1,14 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/coocos/catastrophe/feed"
 	"github.com/gorilla/websocket"
+	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 var eventStream = make(chan *feed.Event)
@@ -19,10 +20,10 @@ var latestEvent = feed.Event{}
 func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("Failed to upgrade WebSocket connection")
+		log.Warn("Failed to upgrade WebSocket connection")
 		return
 	}
-	log.Printf("New client connected")
+	log.Info("New client connected")
 
 	clientMutex.Lock()
 	clients[conn] = true
@@ -37,18 +38,26 @@ func UpdateEvents(ticker *time.Ticker, eventStream chan<- *feed.Event) {
 
 	allEvents, err := client.LatestEvents()
 	if err != nil {
-		log.Printf("Failed to retrieve starting event %s", err)
+		log.WithFields(log.Fields{
+			"err": err,
+		}).Error("Failed to retrieve starting event")
+	} else {
+		latestEvent = allEvents[len(allEvents)-1]
+		eventStream <- &latestEvent
 	}
-	latestEvent = allEvents[len(allEvents)-1]
-	eventStream <- &latestEvent
 
 	for _ = range ticker.C {
 		newEvents, err := client.EventsSince(latestEvent.Time)
-		log.Printf("%d new event(s)", len(newEvents))
 		if err != nil {
-			log.Printf("Failed to retrieve event feed: %s", err)
+			log.WithFields(log.Fields{
+				"err": err,
+			}).Error("Failed to retrieve event feed")
 			continue
 		}
+
+		log.WithFields(log.Fields{
+			"events": len(newEvents),
+		}).Info("Found new events")
 		for _, event := range newEvents {
 			eventStream <- &event
 		}
@@ -62,13 +71,15 @@ func UpdateEvents(ticker *time.Ticker, eventStream chan<- *feed.Event) {
 func BroadcastEvents(eventStream <-chan *feed.Event) {
 
 	for event := range eventStream {
-		log.Printf("%s", event)
 		clientMutex.Lock()
-		log.Printf("Broadcasting event to %d clients", len(clients))
+		log.WithFields(log.Fields{
+			"connected_clients": len(clients),
+		}).Info("Broadcasting event to clients")
+		log.Info(event)
 		for client := range clients {
 			err := client.WriteJSON(event)
 			if err != nil {
-				log.Printf("Dropping client")
+				log.Info("Dropping client")
 				delete(clients, client)
 			}
 		}
@@ -76,7 +87,15 @@ func BroadcastEvents(eventStream <-chan *feed.Event) {
 	}
 }
 
+func configureLogger() {
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+}
+
 func main() {
+
+	configureLogger()
 
 	ticker := time.NewTicker(60 * 1000 * time.Millisecond)
 	go UpdateEvents(ticker, eventStream)

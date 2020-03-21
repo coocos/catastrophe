@@ -1,11 +1,11 @@
 package feed
 
 import (
-	"log"
 	"strings"
 	"time"
 
 	"github.com/mmcdole/gofeed"
+	log "github.com/sirupsen/logrus"
 )
 
 type Event struct {
@@ -19,7 +19,9 @@ func parseTimestamp(timestamp string) time.Time {
 
 	date, err := time.Parse(time.RFC1123Z, timestamp)
 	if err != nil {
-		log.Printf("Failed to parse timestamp: %s", err)
+		log.WithFields(log.Fields{
+			"err": err,
+		}).Error("Failed to parse timestamp")
 		date = time.Now()
 	}
 	return date
@@ -30,7 +32,9 @@ func Parse(rawFeed string) ([]Event, error) {
 	parser := gofeed.NewParser()
 	feed, err := parser.ParseString(rawFeed)
 	if err != nil {
-		log.Printf("Failed to parse events: %s", err)
+		log.WithFields(log.Fields{
+			"err": err,
+		}).Error("Failed to parse events")
 		return []Event{}, err
 	}
 

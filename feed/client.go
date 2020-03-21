@@ -1,11 +1,12 @@
 package feed
 
 import (
-	"errors"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const feedUrl string = "http://www.peto-media.fi/tiedotteet/rss.xml"
@@ -58,19 +59,21 @@ func (client *Client) fetchFeed() (string, error) {
 
 	resp, err := http.Get(client.baseUrl)
 	if err != nil {
-		log.Println("HTTP request to retrieve feed failed")
+		log.Error("HTTP request to retrieve feed failed")
 		return "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("Failed to retrieve feed: %s", resp.Status)
-		return "", errors.New("Invalid HTTP response status code")
+		log.WithFields(log.Fields{
+			"http_status": resp.StatusCode,
+		}).Error("Failed to retrieve feed")
+		return "", fmt.Errorf("Invalid HTTP response status code %d", resp.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("Failed to read feed response")
+		log.Error("Failed to read feed response")
 		return "", err
 	}
 
