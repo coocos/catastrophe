@@ -10,8 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var latestEvent = feed.Event{}
-
 func pollEvents(client *feed.Client, ticker *time.Ticker, eventStream chan<- *feed.Event) {
 
 	events, err := client.LatestEvents()
@@ -21,7 +19,7 @@ func pollEvents(client *feed.Client, ticker *time.Ticker, eventStream chan<- *fe
 		}).Fatal("Failed to retrieve starting event")
 	}
 
-	latestEvent = events[len(events)-1]
+	latestEvent := events[len(events)-1]
 	eventStream <- &latestEvent
 
 	for _ = range ticker.C {
