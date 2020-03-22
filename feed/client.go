@@ -9,17 +9,17 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const feedUrl string = "http://www.peto-media.fi/tiedotteet/rss.xml"
+const feedURL string = "http://www.peto-media.fi/tiedotteet/rss.xml"
 
 // A Client is an HTTP client used to retrieve events from the Finnish rescue service API
 type Client struct {
-	baseUrl string
+	baseURL string
 }
 
 // NewClient returns a pointer to a new Client instance
 func NewClient() *Client {
 	return &Client{
-		feedUrl,
+		feedURL,
 	}
 }
 
@@ -61,7 +61,7 @@ func (client *Client) EventsSince(since time.Time) ([]Event, error) {
 
 func (client *Client) fetchFeed() (string, error) {
 
-	resp, err := http.Get(client.baseUrl)
+	resp, err := http.Get(client.baseURL)
 	if err != nil {
 		log.Error("HTTP request to retrieve feed failed")
 		return "", err

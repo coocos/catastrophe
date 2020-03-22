@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-func NewTestClient(baseUrl string) *Client {
+func NewTestClient(baseURL string) *Client {
 	return &Client{
-		baseUrl + "/tiedotteet/rss.xml",
+		baseURL + "/tiedotteet/rss.xml",
 	}
 }
 
