@@ -11,16 +11,19 @@ import (
 
 const feedUrl string = "http://www.peto-media.fi/tiedotteet/rss.xml"
 
+// A Client is an HTTP client used to retrieve events from the Finnish rescue service API
 type Client struct {
 	baseUrl string
 }
 
+// NewClient returns a pointer to a new Client instance
 func NewClient() *Client {
 	return &Client{
 		feedUrl,
 	}
 }
 
+// LatestEvents returns a slice containing the latest published Events
 func (client *Client) LatestEvents() ([]Event, error) {
 
 	rawFeed, err := client.fetchFeed()
@@ -37,6 +40,7 @@ func (client *Client) LatestEvents() ([]Event, error) {
 
 }
 
+// EventsSince returns a slice of Events that have occurred since the the passed time.Time
 func (client *Client) EventsSince(since time.Time) ([]Event, error) {
 
 	events, err := client.LatestEvents()

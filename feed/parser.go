@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// An Event represents a rescue service event
 type Event struct {
 	Type        string    `json:"type"`
 	Location    string    `json:"location"`
@@ -28,6 +29,7 @@ func parseTimestamp(timestamp string) time.Time {
 
 }
 
+// Parse parses the feed from a string into a slice of Events
 func Parse(rawFeed string) ([]Event, error) {
 	parser := gofeed.NewParser()
 	feed, err := parser.ParseString(rawFeed)
