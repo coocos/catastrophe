@@ -80,9 +80,11 @@ func broadcastEvents(eventStream <-chan *feed.Event) {
 	for event := range eventStream {
 		clientMutex.Lock()
 		log.WithFields(log.Fields{
-			"connected_clients": len(clients),
-		}).Info("Broadcasting event to clients")
-		log.Info(event)
+			"clients":        len(clients),
+			"event_location": event.Location,
+			"event_type":     event.Type,
+			"event_time":     event.Time,
+		}).Info("Publishing new event")
 		for client := range clients {
 			err := client.WriteJSON(event)
 			if err != nil {
