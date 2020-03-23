@@ -11,20 +11,26 @@ import (
 
 const feedURL string = "http://www.peto-media.fi/tiedotteet/rss.xml"
 
-// A Client is an HTTP client used to retrieve events from the Finnish rescue service API
-type Client struct {
+// Client is an interface for clients which return feed.Event
+type Client interface {
+	LatestEvents() ([]Event, error)
+	EventsSince(time.Time) ([]Event, error)
+}
+
+// RescueServiceClient is an HTTP client used to retrieve events from the Finnish rescue service API
+type RescueServiceClient struct {
 	baseURL string
 }
 
-// NewClient returns a pointer to a new Client instance
-func NewClient() *Client {
-	return &Client{
+// NewRescueServiceClient returns a pointer to a new Client instance
+func NewRescueServiceClient() *RescueServiceClient {
+	return &RescueServiceClient{
 		feedURL,
 	}
 }
 
 // LatestEvents returns a slice containing the latest published Events
-func (client *Client) LatestEvents() ([]Event, error) {
+func (client *RescueServiceClient) LatestEvents() ([]Event, error) {
 
 	rawFeed, err := client.fetchFeed()
 	if err != nil {
@@ -41,7 +47,7 @@ func (client *Client) LatestEvents() ([]Event, error) {
 }
 
 // EventsSince returns a slice of Events that have occurred since the the passed time.Time
-func (client *Client) EventsSince(since time.Time) ([]Event, error) {
+func (client *RescueServiceClient) EventsSince(since time.Time) ([]Event, error) {
 
 	events, err := client.LatestEvents()
 	if err != nil {
@@ -59,7 +65,7 @@ func (client *Client) EventsSince(since time.Time) ([]Event, error) {
 
 }
 
-func (client *Client) fetchFeed() (string, error) {
+func (client *RescueServiceClient) fetchFeed() (string, error) {
 
 	resp, err := http.Get(client.baseURL)
 	if err != nil {

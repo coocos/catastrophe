@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-func NewTestClient(baseURL string) *Client {
-	return &Client{
+func NewTestClient(baseURL string) *RescueServiceClient {
+	return &RescueServiceClient{
 		baseURL + "/tiedotteet/rss.xml",
 	}
 }
