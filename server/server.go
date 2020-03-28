@@ -37,32 +37,32 @@ func NewWebSocketServer(host string, port int) *WebSocketServer {
 }
 
 // Publish sends event to all connected WebSocket clients
-func (server WebSocketServer) Publish(event *feed.Event) {
+func (s WebSocketServer) Publish(event *feed.Event) {
 
-	server.latestEvent = event
+	s.latestEvent = event
 
-	server.clientMutex.Lock()
-	defer server.clientMutex.Unlock()
+	s.clientMutex.Lock()
+	defer s.clientMutex.Unlock()
 
 	log.WithFields(log.Fields{
 		"event_location": event.Location,
 		"event_type":     event.Type,
 		"event_time":     event.Time,
-		"clients":        len(server.Clients),
+		"clients":        len(s.Clients),
 	}).Info("Publishing new event")
 
-	for client := range server.Clients {
+	for client := range s.Clients {
 		err := client.WriteJSON(event)
 		if err != nil {
 			log.Info("Dropping client")
-			delete(server.Clients, client)
+			delete(s.Clients, client)
 		}
 	}
 
 }
 
 // Start starts the WebSocket server and blocks
-func (server WebSocketServer) Start() {
+func (s WebSocketServer) Start() {
 
 	upgrader := websocket.Upgrader{}
 	http.HandleFunc("/websocket", func(w http.ResponseWriter, r *http.Request) {
@@ -73,20 +73,20 @@ func (server WebSocketServer) Start() {
 			return
 		}
 
-		server.clientMutex.Lock()
-		defer server.clientMutex.Unlock()
+		s.clientMutex.Lock()
+		defer s.clientMutex.Unlock()
 		log.WithFields(log.Fields{
-			"connected_clients": len(server.Clients),
+			"connected_clients": len(s.Clients),
 		}).Info("New client connected")
-		server.Clients[conn] = true
+		s.Clients[conn] = true
 
-		conn.WriteJSON(server.latestEvent)
+		conn.WriteJSON(s.latestEvent)
 	})
 
 	log.WithFields(log.Fields{
-		"host": server.Host,
-		"port": server.Port,
+		"host": s.Host,
+		"port": s.Port,
 	}).Info("Starting server")
-	http.ListenAndServe(fmt.Sprintf("%s:%d", server.Host, server.Port), nil)
+	http.ListenAndServe(fmt.Sprintf("%s:%d", s.Host, s.Port), nil)
 
 }

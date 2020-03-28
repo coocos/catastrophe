@@ -11,11 +11,9 @@ import (
 )
 
 func streamEventsToServer(eventStream <-chan *feed.Event, server server.EventServer) {
-
 	for event := range eventStream {
 		server.Publish(event)
 	}
-
 }
 
 func configureLogger() {

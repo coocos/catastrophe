@@ -30,9 +30,9 @@ func NewRescueServiceClient() *RescueServiceClient {
 }
 
 // LatestEvents returns a slice containing the latest published Events
-func (client *RescueServiceClient) LatestEvents() ([]Event, error) {
+func (c *RescueServiceClient) LatestEvents() ([]Event, error) {
 
-	rawFeed, err := client.fetchFeed()
+	rawFeed, err := c.fetchFeed()
 	if err != nil {
 		return []Event{}, err
 	}
@@ -47,9 +47,9 @@ func (client *RescueServiceClient) LatestEvents() ([]Event, error) {
 }
 
 // EventsSince returns a slice of Events that have occurred since the the passed time.Time
-func (client *RescueServiceClient) EventsSince(since time.Time) ([]Event, error) {
+func (c *RescueServiceClient) EventsSince(since time.Time) ([]Event, error) {
 
-	events, err := client.LatestEvents()
+	events, err := c.LatestEvents()
 	if err != nil {
 		return []Event{}, err
 	}
@@ -65,9 +65,9 @@ func (client *RescueServiceClient) EventsSince(since time.Time) ([]Event, error)
 
 }
 
-func (client *RescueServiceClient) fetchFeed() (string, error) {
+func (c *RescueServiceClient) fetchFeed() (string, error) {
 
-	resp, err := http.Get(client.baseURL)
+	resp, err := http.Get(c.baseURL)
 	if err != nil {
 		log.Error("HTTP request to retrieve feed failed")
 		return "", err
