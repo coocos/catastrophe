@@ -14,15 +14,17 @@ import (
 type EventServer interface {
 	Publish(*feed.Event)
 	Start()
+	Shutdown()
 }
 
 // WebSocketServer is used to interface with WebSocket connections
 type WebSocketServer struct {
 	connections map[*websocket.Conn]bool
+	server      *http.Server
 	mutex       *sync.Mutex
 	latestEvent *feed.Event
-	Port        int
-	Host        string
+	port        int
+	host        string
 }
 
 // NewWebSocketServer constructs a WebSocketServer
@@ -30,8 +32,8 @@ func NewWebSocketServer(host string, port int) *WebSocketServer {
 	server := WebSocketServer{
 		connections: make(map[*websocket.Conn]bool),
 		mutex:       &sync.Mutex{},
-		Port:        port,
-		Host:        host,
+		port:        port,
+		host:        host,
 	}
 	return &server
 }
@@ -56,6 +58,7 @@ func (s *WebSocketServer) Publish(event *feed.Event) {
 		if err != nil {
 			log.Info("Dropping connection")
 			delete(s.connections, connection)
+			connection.Close()
 		}
 	}
 
@@ -85,15 +88,40 @@ func (s *WebSocketServer) handleNewConnection(w http.ResponseWriter, r *http.Req
 	conn.WriteJSON(s.latestEvent)
 }
 
+// Shutdown closes all WebSocket connections and shuts down the server
+func (s *WebSocketServer) Shutdown() {
+
+	log.WithFields(log.Fields{
+		"connections": len(s.connections),
+	}).Info("Shutting down server")
+
+	s.mutex.Lock()
+	for connection := range s.connections {
+		connection.Close()
+	}
+	s.mutex.Unlock()
+
+	s.server.Close()
+}
+
 // Start starts the WebSocket server and blocks
 func (s *WebSocketServer) Start() {
 
-	http.HandleFunc("/websocket", s.handleNewConnection)
-
 	log.WithFields(log.Fields{
-		"host": s.Host,
-		"port": s.Port,
+		"host": s.host,
+		"port": s.port,
 	}).Info("Starting server")
-	http.ListenAndServe(fmt.Sprintf("%s:%d", s.Host, s.Port), nil)
+
+	s.server = &http.Server{
+		Addr:    fmt.Sprintf("%s:%d", s.host, s.port),
+		Handler: http.HandlerFunc(s.handleNewConnection),
+	}
+
+	if err := s.server.ListenAndServe(); err != http.ErrServerClosed {
+		log.WithFields(log.Fields{
+			"host": s.host,
+			"port": s.port,
+		}).Fatal("Failed to start server - is the port in use?")
+	}
 
 }

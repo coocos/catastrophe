@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/coocos/catastrophe/feed"
@@ -32,6 +34,14 @@ func main() {
 
 	webSocketServer := server.NewWebSocketServer(*host, *port)
 	defer webSocketServer.Start()
+
+	// Stop the server gracefully on SIGINT
+	go func() {
+		interrupt := make(chan os.Signal, 1)
+		signal.Notify(interrupt, os.Interrupt)
+		<-interrupt
+		webSocketServer.Shutdown()
+	}()
 
 	eventStream := make(chan *feed.Event)
 	go feed.PollEvents(feed.NewRescueServiceClient(), time.NewTicker(60*time.Second), eventStream)
