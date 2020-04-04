@@ -18,8 +18,8 @@ type EventServer interface {
 
 // WebSocketServer is used to interface with WebSocket connections
 type WebSocketServer struct {
-	Clients     map[*websocket.Conn]bool
-	clientMutex *sync.Mutex
+	connections map[*websocket.Conn]bool
+	mutex       *sync.Mutex
 	latestEvent *feed.Event
 	Port        int
 	Host        string
@@ -28,8 +28,8 @@ type WebSocketServer struct {
 // NewWebSocketServer constructs a WebSocketServer
 func NewWebSocketServer(host string, port int) *WebSocketServer {
 	server := WebSocketServer{
-		Clients:     make(map[*websocket.Conn]bool),
-		clientMutex: &sync.Mutex{},
+		connections: make(map[*websocket.Conn]bool),
+		mutex:       &sync.Mutex{},
 		Port:        port,
 		Host:        host,
 	}
@@ -37,51 +37,58 @@ func NewWebSocketServer(host string, port int) *WebSocketServer {
 }
 
 // Publish sends event to all connected WebSocket clients
-func (s WebSocketServer) Publish(event *feed.Event) {
+func (s *WebSocketServer) Publish(event *feed.Event) {
 
 	s.latestEvent = event
 
-	s.clientMutex.Lock()
-	defer s.clientMutex.Unlock()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	log.WithFields(log.Fields{
 		"event_location": event.Location,
 		"event_type":     event.Type,
 		"event_time":     event.Time,
-		"clients":        len(s.Clients),
+		"connections":    len(s.connections),
 	}).Info("Publishing new event")
 
-	for client := range s.Clients {
-		err := client.WriteJSON(event)
+	for connection := range s.connections {
+		err := connection.WriteJSON(event)
 		if err != nil {
-			log.Info("Dropping client")
-			delete(s.Clients, client)
+			log.Info("Dropping connection")
+			delete(s.connections, connection)
 		}
 	}
 
 }
 
-// Start starts the WebSocket server and blocks
-func (s WebSocketServer) Start() {
+func (s *WebSocketServer) addConnection(conn *websocket.Conn) {
+
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	log.WithFields(log.Fields{
+		"connections": len(s.connections),
+	}).Info("New connection")
+	s.connections[conn] = true
+
+}
+
+func (s *WebSocketServer) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 
 	upgrader := websocket.Upgrader{}
-	http.HandleFunc("/websocket", func(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Warn("Failed to upgrade WebSocket connection")
+		return
+	}
 
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			log.Warn("Failed to upgrade WebSocket connection")
-			return
-		}
+	s.addConnection(conn)
+	conn.WriteJSON(s.latestEvent)
+}
 
-		s.clientMutex.Lock()
-		defer s.clientMutex.Unlock()
-		log.WithFields(log.Fields{
-			"connected_clients": len(s.Clients),
-		}).Info("New client connected")
-		s.Clients[conn] = true
+// Start starts the WebSocket server and blocks
+func (s *WebSocketServer) Start() {
 
-		conn.WriteJSON(s.latestEvent)
-	})
+	http.HandleFunc("/websocket", s.handleNewConnection)
 
 	log.WithFields(log.Fields{
 		"host": s.Host,
