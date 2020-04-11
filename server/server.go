@@ -95,7 +95,12 @@ func (s *WebSocketServer) handleNewConnection(w http.ResponseWriter, r *http.Req
 	}
 
 	s.addConnection(conn)
-	conn.WriteJSON(s.latestEvent)
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.latestEvent != nil {
+		conn.WriteJSON(s.latestEvent)
+	}
 }
 
 // Shutdown closes all WebSocket connections and shuts down the server
