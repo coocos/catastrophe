@@ -23,6 +23,7 @@ type WebSocketServer struct {
 	server      *http.Server
 	mutex       *sync.Mutex
 	latestEvent *feed.Event
+	upgrader    *websocket.Upgrader
 	port        int
 	host        string
 }
@@ -34,6 +35,7 @@ func NewWebSocketServer(host string, port int) *WebSocketServer {
 		mutex:       &sync.Mutex{},
 		port:        port,
 		host:        host,
+		upgrader:    &websocket.Upgrader{},
 	}
 	return &server
 }
@@ -77,8 +79,7 @@ func (s *WebSocketServer) addConnection(conn *websocket.Conn) {
 
 func (s *WebSocketServer) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 
-	upgrader := websocket.Upgrader{}
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Warn("Failed to upgrade WebSocket connection")
 		return
