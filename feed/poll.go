@@ -6,18 +6,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// PollEvents polls the event feed and dispatches the events to the server for publishing
-func PollEvents(client Client, ticker *time.Ticker, eventStream chan<- *Event) {
-
+func getFirstEvent(client Client) Event {
 	events, err := client.LatestEvents()
-	// Fail fast at startup
+	// Fail fast if unable to fetch the first event
 	if err != nil {
 		log.WithFields(log.Fields{
 			"err": err,
 		}).Fatal("Failed to retrieve starting event")
 	}
+	return events[len(events)-1]
+}
 
-	latestEvent := events[len(events)-1]
+// PollEvents polls the event feed and dispatches the events to the server for publishing
+func PollEvents(client Client, ticker *time.Ticker, eventStream chan<- *Event) {
+
+	latestEvent := getFirstEvent(client)
 	eventStream <- &latestEvent
 
 	// Periodically check the feed for new events

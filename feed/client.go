@@ -11,7 +11,7 @@ import (
 
 const feedURL string = "http://www.peto-media.fi/tiedotteet/rss.xml"
 
-// Client is an interface for clients which return feed.Event
+// Client is an interface for clients which can be used to query events from a feed
 type Client interface {
 	LatestEvents() ([]Event, error)
 	EventsSince(time.Time) ([]Event, error)

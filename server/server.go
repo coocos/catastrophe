@@ -42,7 +42,7 @@ func NewWebSocketServer(host string, port int) *WebSocketServer {
 	mux.Handle("/websocket", http.HandlerFunc(server.handleNewConnection))
 
 	server.httpServer = &http.Server{
-		Addr: fmt.Sprintf("%s:%d", host, port),
+		Addr:    fmt.Sprintf("%s:%d", host, port),
 		Handler: mux,
 	}
 
