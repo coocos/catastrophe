@@ -20,8 +20,8 @@ type EventServer interface {
 // WebSocketServer is used to interface with WebSocket connections
 type WebSocketServer struct {
 	connections map[*websocket.Conn]bool
-	server      *http.Server
-	mutex       *sync.Mutex
+	httpServer  *http.Server
+	lock        *sync.Mutex
 	latestEvent *feed.Event
 	upgrader    *websocket.Upgrader
 	port        int
@@ -32,21 +32,28 @@ type WebSocketServer struct {
 func NewWebSocketServer(host string, port int) *WebSocketServer {
 	server := WebSocketServer{
 		connections: make(map[*websocket.Conn]bool),
-		mutex:       &sync.Mutex{},
+		lock:        &sync.Mutex{},
 		port:        port,
 		host:        host,
 		upgrader:    &websocket.Upgrader{},
 	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/websocket", http.HandlerFunc(server.handleNewConnection))
+
+	server.httpServer = &http.Server{
+		Addr: fmt.Sprintf("%s:%d", host, port),
+		Handler: mux,
+	}
+
 	return &server
 }
 
 // Publish sends event to all connected WebSocket clients
 func (s *WebSocketServer) Publish(event *feed.Event) {
 
-	s.latestEvent = event
-
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	log.WithFields(log.Fields{
 		"event_location": event.Location,
@@ -54,6 +61,8 @@ func (s *WebSocketServer) Publish(event *feed.Event) {
 		"event_time":     event.Time,
 		"connections":    len(s.connections),
 	}).Info("Publishing new event")
+
+	s.latestEvent = event
 
 	for connection := range s.connections {
 		err := connection.WriteJSON(event)
@@ -68,12 +77,12 @@ func (s *WebSocketServer) Publish(event *feed.Event) {
 
 func (s *WebSocketServer) addConnection(conn *websocket.Conn) {
 
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.connections[conn] = true
 	log.WithFields(log.Fields{
 		"connections": len(s.connections),
 	}).Info("New connection")
-	s.connections[conn] = true
 
 }
 
@@ -96,13 +105,13 @@ func (s *WebSocketServer) Shutdown() {
 		"connections": len(s.connections),
 	}).Info("Shutting down server")
 
-	s.mutex.Lock()
+	s.lock.Lock()
 	for connection := range s.connections {
 		connection.Close()
 	}
-	s.mutex.Unlock()
+	s.lock.Unlock()
 
-	s.server.Close()
+	s.httpServer.Close()
 }
 
 // Start starts the WebSocket server and blocks
@@ -113,12 +122,7 @@ func (s *WebSocketServer) Start() {
 		"port": s.port,
 	}).Info("Starting server")
 
-	s.server = &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", s.host, s.port),
-		Handler: http.HandlerFunc(s.handleNewConnection),
-	}
-
-	if err := s.server.ListenAndServe(); err != http.ErrServerClosed {
+	if err := s.httpServer.ListenAndServe(); err != http.ErrServerClosed {
 		log.WithFields(log.Fields{
 			"host": s.host,
 			"port": s.port,
