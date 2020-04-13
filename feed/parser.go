@@ -17,7 +17,6 @@ type Event struct {
 }
 
 func parseTimestamp(timestamp string) time.Time {
-
 	date, err := time.Parse(time.RFC1123Z, timestamp)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -25,8 +24,8 @@ func parseTimestamp(timestamp string) time.Time {
 		}).Error("Failed to parse timestamp")
 		date = time.Now()
 	}
-	return date
 
+	return date
 }
 
 // Parse parses the feed from a string into a slice of Events

@@ -9,13 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// EventServer is an interface for servers which can publish rescue service events
-type EventServer interface {
-	Publish(*feed.Event)
-	Start()
-	Shutdown()
-}
-
 // WebSocketServer is used to interface with WebSocket connections
 type WebSocketServer struct {
 	group      *ConnectionGroup
