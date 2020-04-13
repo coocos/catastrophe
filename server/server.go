@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"sync"
 
 	"github.com/coocos/catastrophe/feed"
 	"github.com/gorilla/websocket"
@@ -19,27 +18,24 @@ type EventServer interface {
 
 // WebSocketServer is used to interface with WebSocket connections
 type WebSocketServer struct {
-	connections map[*websocket.Conn]bool
-	httpServer  *http.Server
-	lock        *sync.Mutex
-	latestEvent *feed.Event
-	upgrader    *websocket.Upgrader
-	port        int
-	host        string
+	group      *ConnectionGroup
+	httpServer *http.Server
+	upgrader   *websocket.Upgrader
+	port       int
+	host       string
 }
 
 // NewWebSocketServer constructs a WebSocketServer
 func NewWebSocketServer(host string, port int) *WebSocketServer {
 	server := WebSocketServer{
-		connections: make(map[*websocket.Conn]bool),
-		lock:        &sync.Mutex{},
-		port:        port,
-		host:        host,
-		upgrader:    &websocket.Upgrader{},
+		group:    NewConnectionGroup(),
+		port:     port,
+		host:     host,
+		upgrader: &websocket.Upgrader{},
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/websocket", http.HandlerFunc(server.handleNewConnection))
+	mux.HandleFunc("/websocket", server.handleNewConnection)
 
 	server.httpServer = &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", host, port),
@@ -51,87 +47,50 @@ func NewWebSocketServer(host string, port int) *WebSocketServer {
 
 // Publish sends event to all connected WebSocket clients
 func (s *WebSocketServer) Publish(event *feed.Event) {
-
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
 	log.WithFields(log.Fields{
 		"event_location": event.Location,
 		"event_type":     event.Type,
 		"event_time":     event.Time,
-		"connections":    len(s.connections),
+		"connections":    s.group.Count(),
 	}).Info("Publishing new event")
-
-	s.latestEvent = event
-
-	for connection := range s.connections {
-		err := connection.WriteJSON(event)
-		if err != nil {
-			log.Info("Dropping connection")
-			delete(s.connections, connection)
-			connection.Close()
-		}
-	}
-
+	s.group.Broadcast(event)
 }
 
 func (s *WebSocketServer) addConnection(conn *websocket.Conn) {
-
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	s.connections[conn] = true
+	s.group.Add(conn)
 	log.WithFields(log.Fields{
-		"connections": len(s.connections),
+		"connections": s.group.Count(),
 	}).Info("New connection")
-
 }
 
 func (s *WebSocketServer) handleNewConnection(w http.ResponseWriter, r *http.Request) {
-
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Warn("Failed to upgrade WebSocket connection")
 		return
 	}
-
-	s.addConnection(conn)
-
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	if s.latestEvent != nil {
-		conn.WriteJSON(s.latestEvent)
-	}
+	s.group.Add(conn)
 }
 
 // Shutdown closes all WebSocket connections and shuts down the server
 func (s *WebSocketServer) Shutdown() {
-
 	log.WithFields(log.Fields{
-		"connections": len(s.connections),
+		"connections": s.group.Count(),
 	}).Info("Shutting down server")
-
-	s.lock.Lock()
-	for connection := range s.connections {
-		connection.Close()
-	}
-	s.lock.Unlock()
-
+	s.group.Shutdown()
 	s.httpServer.Close()
 }
 
 // Start starts the WebSocket server and blocks
 func (s *WebSocketServer) Start() {
-
 	log.WithFields(log.Fields{
 		"host": s.host,
 		"port": s.port,
 	}).Info("Starting server")
-
 	if err := s.httpServer.ListenAndServe(); err != http.ErrServerClosed {
 		log.WithFields(log.Fields{
 			"host": s.host,
 			"port": s.port,
 		}).Fatal("Failed to start server - is the port in use?")
 	}
-
 }

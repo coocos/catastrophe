@@ -12,17 +12,14 @@ import (
 )
 
 func createEvent() *feed.Event {
-
 	return &feed.Event{
 		Type:     "Tulipalo",
 		Location: "Helsinki",
 		Time:     time.Now().UTC(),
 	}
-
 }
 
 func createClient(host string, port int, t *testing.T) *websocket.Conn {
-
 	url := url.URL{
 		Scheme: "ws",
 		Host:   fmt.Sprintf("%s:%d", host, port),
@@ -40,11 +37,10 @@ func createClient(host string, port int, t *testing.T) *websocket.Conn {
 }
 
 func createServer(host string, port int) *WebSocketServer {
-
 	webSocketServer := NewWebSocketServer(host, port)
 	go webSocketServer.Start()
-	return webSocketServer
 
+	return webSocketServer
 }
 
 // TestServer tests WebSocket communication between the server and a client
