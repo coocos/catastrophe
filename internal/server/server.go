@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/coocos/catastrophe/feed"
+	"github.com/coocos/catastrophe/internal/feed"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )

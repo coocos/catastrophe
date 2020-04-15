@@ -6,17 +6,11 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/coocos/catastrophe/feed"
-	"github.com/coocos/catastrophe/server"
+	"github.com/coocos/catastrophe/internal/feed"
+	"github.com/coocos/catastrophe/internal/server"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
-
-func streamEventsToServer(eventStream <-chan *feed.Event, server server.EventServer) {
-	for event := range eventStream {
-		server.Publish(event)
-	}
-}
 
 func configureLogger() {
 	log.SetFormatter(&logrus.TextFormatter{
@@ -44,7 +38,16 @@ func main() {
 	}()
 
 	eventStream := make(chan *feed.Event)
+
+	// TODO: Maybe this should return a channel instead? Then once you close the channel it's done?
+	// So instead of passing eventStream, it internally creates a goroutine which puts events into the
+	// channel it returns
 	go feed.PollEvents(feed.NewRescueServiceClient(), time.NewTicker(60*time.Second), eventStream)
-	go streamEventsToServer(eventStream, webSocketServer)
+
+	go func() {
+		for event := range eventStream {
+			webSocketServer.Publish(event)
+		}
+	}()
 
 }

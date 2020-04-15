@@ -3,7 +3,7 @@ package server
 import (
 	"sync"
 
-	"github.com/coocos/catastrophe/feed"
+	"github.com/coocos/catastrophe/internal/feed"
 	log "github.com/sirupsen/logrus"
 )
 

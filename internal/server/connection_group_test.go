@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coocos/catastrophe/feed"
+	"github.com/coocos/catastrophe/internal/feed"
 )
 
 type TestConnection struct {

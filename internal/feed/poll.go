@@ -24,6 +24,9 @@ func PollEvents(client Client, ticker *time.Ticker, eventStream chan<- *Event) {
 	eventStream <- &latestEvent
 
 	// Periodically check the feed for new events
+	// TODO: Maybe this function should not even be aware of the ticker... Instead it
+	// use select with two channels, one that yields commands to grab the feed and the
+	// other channel to quit?
 	for _ = range ticker.C {
 		newEvents, err := client.EventsSince(latestEvent.Time)
 		if err != nil {
