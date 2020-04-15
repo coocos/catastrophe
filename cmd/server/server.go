@@ -29,15 +29,16 @@ func main() {
 	webSocketServer := server.NewWebSocketServer(*host, *port)
 	defer webSocketServer.Start()
 
+	eventStream := make(chan *feed.Event)
+
 	// Stop the server gracefully on SIGINT
 	go func() {
 		interrupt := make(chan os.Signal, 1)
 		signal.Notify(interrupt, os.Interrupt)
 		<-interrupt
+		close(eventStream)
 		webSocketServer.Shutdown()
 	}()
-
-	eventStream := make(chan *feed.Event)
 
 	// TODO: Maybe this should return a channel instead? Then once you close the channel it's done?
 	// So instead of passing eventStream, it internally creates a goroutine which puts events into the
