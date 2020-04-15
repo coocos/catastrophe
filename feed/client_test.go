@@ -7,13 +7,13 @@ import (
 	"testing"
 )
 
-func NewTestClient(baseURL string) *RescueServiceClient {
+func createTestClient(baseURL string) *RescueServiceClient {
 	return &RescueServiceClient{
 		baseURL + "/tiedotteet/rss.xml",
 	}
 }
 
-func NewTestServer() *httptest.Server {
+func createTestServer() *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := `<?xml version="1.0" encoding="ISO-8859-1"?>
     <rss version="2.0">
@@ -41,38 +41,38 @@ func NewTestServer() *httptest.Server {
 	return server
 }
 
-func TestClientLatestEvents(t *testing.T) {
+// TestClient tests basic use of the feed client
+func TestClient(t *testing.T) {
 
-	server := NewTestServer()
+	server := createTestServer()
 	defer server.Close()
 
-	client := NewTestClient(server.URL)
-	events, err := client.LatestEvents()
-	if err != nil {
-		t.Errorf("Failed to fetch latest events")
-	}
-	if len(events) != 2 {
-		t.Errorf("Client returned %d events instead of %d", len(events), 3)
-	}
+	t.Run("test fetching latest events", func(t *testing.T) {
+		client := createTestClient(server.URL)
+		events, err := client.LatestEvents()
+		if err != nil {
+			t.Errorf("Failed to fetch latest events")
+		}
+		if len(events) != 2 {
+			t.Errorf("Client returned %d events instead of %d", len(events), 3)
+		}
+	})
 
-}
+	t.Run("test fetching events since", func(t *testing.T) {
 
-func TestClientEventsSince(t *testing.T) {
+		client := createTestClient(server.URL)
+		events, _ := client.LatestEvents()
+		firstEvent := events[0]
 
-	server := NewTestServer()
-	defer server.Close()
+		newEvents, _ := client.EventsSince(firstEvent.Time)
 
-	client := NewTestClient(server.URL)
-	events, _ := client.LatestEvents()
-	firstEvent := events[0]
+		if len(newEvents) != 1 {
+			t.Errorf("Client returned %d new events instead of %d", len(newEvents), 1)
+		}
+		if newEvents[0].Time.Before(firstEvent.Time) {
+			t.Errorf("Client returned a previous event")
+		}
 
-	newEvents, _ := client.EventsSince(firstEvent.Time)
-
-	if len(newEvents) != 1 {
-		t.Errorf("Client returned %d new events instead of %d", len(newEvents), 1)
-	}
-	if newEvents[0].Time.Before(firstEvent.Time) {
-		t.Errorf("Client returned a previous event")
-	}
+	})
 
 }
