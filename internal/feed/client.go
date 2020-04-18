@@ -11,27 +11,26 @@ import (
 
 const feedURL string = "http://www.peto-media.fi/tiedotteet/rss.xml"
 
-// Client is an interface for clients which can be used to query events from a feed
+// Client is used to retrieve rescue service events
 type Client interface {
-	LatestEvents() ([]Event, error)
 	EventsSince(time.Time) ([]Event, error)
+	LatestEvents() ([]Event, error)
 }
 
-// RescueServiceClient is an HTTP client used to retrieve events from the Finnish rescue service API
-type RescueServiceClient struct {
+// EventClient is a client used to retrieve rescue service events
+type EventClient struct {
 	baseURL string
 }
 
-// NewRescueServiceClient returns a pointer to a new Client instance
-func NewRescueServiceClient() *RescueServiceClient {
-	return &RescueServiceClient{
+// NewClient returns a new feed client
+func NewClient() *EventClient {
+	return &EventClient{
 		feedURL,
 	}
 }
 
 // LatestEvents returns a slice containing the latest published Events
-func (c *RescueServiceClient) LatestEvents() ([]Event, error) {
-
+func (c *EventClient) LatestEvents() ([]Event, error) {
 	rawFeed, err := c.fetchFeed()
 	if err != nil {
 		return []Event{}, err
@@ -43,12 +42,10 @@ func (c *RescueServiceClient) LatestEvents() ([]Event, error) {
 	}
 
 	return events, nil
-
 }
 
 // EventsSince returns a slice of Events that have occurred since the the passed time.Time
-func (c *RescueServiceClient) EventsSince(since time.Time) ([]Event, error) {
-
+func (c *EventClient) EventsSince(since time.Time) ([]Event, error) {
 	events, err := c.LatestEvents()
 	if err != nil {
 		return []Event{}, err
@@ -62,11 +59,9 @@ func (c *RescueServiceClient) EventsSince(since time.Time) ([]Event, error) {
 	}
 
 	return eventsSince, nil
-
 }
 
-func (c *RescueServiceClient) fetchFeed() (string, error) {
-
+func (c *EventClient) fetchFeed() (string, error) {
 	resp, err := http.Get(c.baseURL)
 	if err != nil {
 		log.Error("HTTP request to retrieve feed failed")
@@ -88,5 +83,4 @@ func (c *RescueServiceClient) fetchFeed() (string, error) {
 	}
 
 	return string(body), nil
-
 }

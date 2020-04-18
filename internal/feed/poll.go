@@ -17,35 +17,42 @@ func getFirstEvent(client Client) Event {
 	return events[len(events)-1]
 }
 
-// PollEvents polls the event feed and dispatches the events to the server for publishing
-func PollEvents(client Client, ticker *time.Ticker, eventStream chan<- *Event) {
-
-	latestEvent := getFirstEvent(client)
-	eventStream <- &latestEvent
+// PollEvents returns a channel of feed.Events which yields new Events as they happen
+func PollEvents(client Client, ticker *time.Ticker, stop <-chan bool) <-chan *Event {
+	events := make(chan *Event)
 
 	// Periodically check the feed for new events
-	// TODO: Maybe this function should not even be aware of the ticker... Instead it
-	// use select with two channels, one that yields commands to grab the feed and the
-	// other channel to quit?
-	for _ = range ticker.C {
-		newEvents, err := client.EventsSince(latestEvent.Time)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"err": err,
-			}).Error("Failed to retrieve event feed")
-			continue
-		}
-		if len(newEvents) == 0 {
-			continue
-		}
-		log.WithFields(log.Fields{
-			"events": len(newEvents),
-		}).Info("Found new events")
+	go func() {
 
-		for _, event := range newEvents {
-			eventStream <- &event
-		}
-		latestEvent = newEvents[len(newEvents)-1]
-	}
+		latestEvent := getFirstEvent(client)
+		events <- &latestEvent
 
+		for {
+			select {
+			case <-stop:
+				close(events)
+				return
+			case <-ticker.C:
+				newEvents, err := client.EventsSince(latestEvent.Time)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"err": err,
+					}).Error("Failed to retrieve event feed")
+					continue
+				}
+				if len(newEvents) > 0 {
+					log.WithFields(log.Fields{
+						"events": len(newEvents),
+					}).Info("Found new events")
+					for _, event := range newEvents {
+						events <- &event
+					}
+					latestEvent = newEvents[len(newEvents)-1]
+				}
+			}
+
+		}
+	}()
+
+	return events
 }

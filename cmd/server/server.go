@@ -27,28 +27,29 @@ func main() {
 	flag.Parse()
 
 	webSocketServer := server.NewWebSocketServer(*host, *port)
-	defer webSocketServer.Start()
 
-	eventStream := make(chan *feed.Event)
+	stop := make(chan bool)
+	events := feed.PollEvents(feed.NewClient(), time.NewTicker(60*time.Second), stop)
 
 	// Stop the server gracefully on SIGINT
 	go func() {
 		interrupt := make(chan os.Signal, 1)
 		signal.Notify(interrupt, os.Interrupt)
-		<-interrupt
-		close(eventStream)
-		webSocketServer.Shutdown()
-	}()
 
-	// TODO: Maybe this should return a channel instead? Then once you close the channel it's done?
-	// So instead of passing eventStream, it internally creates a goroutine which puts events into the
-	// channel it returns
-	go feed.PollEvents(feed.NewRescueServiceClient(), time.NewTicker(60*time.Second), eventStream)
-
-	go func() {
-		for event := range eventStream {
-			webSocketServer.Publish(event)
+		for {
+			select {
+			case <-interrupt:
+				stop <- true
+				webSocketServer.Shutdown()
+				log.Info("Shutting down")
+				break
+			case event := <-events:
+				webSocketServer.Publish(event)
+			}
 		}
+
 	}()
+
+	webSocketServer.Start()
 
 }
