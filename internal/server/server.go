@@ -62,7 +62,7 @@ func (s *WebSocketServer) handleNewConnection(w http.ResponseWriter, r *http.Req
 		log.Warn("Failed to upgrade WebSocket connection")
 		return
 	}
-	s.group.Add(conn)
+	s.addConnection(conn)
 }
 
 // Shutdown closes all WebSocket connections and shuts down the server

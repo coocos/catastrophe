@@ -36,9 +36,11 @@ func (g *ConnectionGroup) Broadcast(event *feed.Event) {
 	for connection := range g.connections {
 		err := connection.WriteJSON(event)
 		if err != nil {
-			log.Info("Dropping connection")
 			delete(g.connections, connection)
 			connection.Close()
+			log.WithFields(log.Fields{
+				"connections": len(g.connections),
+			}).Info("Dropped connection")
 		}
 	}
 }

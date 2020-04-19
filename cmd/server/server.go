@@ -27,6 +27,7 @@ func main() {
 	flag.Parse()
 
 	webSocketServer := server.NewWebSocketServer(*host, *port)
+	defer webSocketServer.Start()
 
 	stop := make(chan bool)
 	events := feed.PollEvents(feed.NewClient(), time.NewTicker(60*time.Second), stop)
@@ -41,15 +42,12 @@ func main() {
 			case <-interrupt:
 				stop <- true
 				webSocketServer.Shutdown()
-				log.Info("Shutting down")
-				break
+				return
 			case event := <-events:
 				webSocketServer.Publish(event)
 			}
 		}
 
 	}()
-
-	webSocketServer.Start()
 
 }
