@@ -1,6 +1,6 @@
 # Catastrophe
 
-WebSocket API for Finnish rescue service events 🚒
+🚒 WebSocket API for Finnish rescue service events
 
 ## API
 

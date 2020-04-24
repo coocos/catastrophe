@@ -44,8 +44,8 @@ func PollEvents(client Client, ticker *time.Ticker, stop <-chan bool) <-chan *Ev
 					log.WithFields(log.Fields{
 						"events": len(newEvents),
 					}).Info("Found new events")
-					for _, event := range newEvents {
-						events <- &event
+					for i := range newEvents {
+						events <- &newEvents[i]
 					}
 					latestEvent = newEvents[len(newEvents)-1]
 				}
