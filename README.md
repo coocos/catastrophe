@@ -1,5 +1,7 @@
 # Catastrophe
 
+![CI](https://github.com/coocos/catastrophe/workflows/CI/badge.svg)
+
 🚒 WebSocket API for Finnish rescue service events
 
 ## API
