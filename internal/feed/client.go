@@ -62,7 +62,8 @@ func (c *EventClient) EventsSince(since time.Time) ([]Event, error) {
 }
 
 func (c *EventClient) fetchFeed() (string, error) {
-	resp, err := http.Get(c.baseURL)
+	httpClient := http.Client{Timeout: 10 * time.Second}
+	resp, err := httpClient.Get(c.baseURL)
 	if err != nil {
 		log.Error("HTTP request to retrieve feed failed")
 		return "", err
