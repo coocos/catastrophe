@@ -49,4 +49,4 @@ go test ./...
 
 ## Motivation
 
-The Finnish rescue services provide an [RSS feed](http://www.peto-media.fi/tiedotteet/rss.xml) but there is no simple event-driven API which yields JSON. Well, now there is! Catastrophe periodically polls the feed and publishes all new events as JSON to all connected WebSocket clients.
+The Finnish rescue services provide an [RSS feed](http://www.peto-media.fi/tiedotteet/rss.xml) but there is no simple event-driven API which yields JSON as events happen. Well, now there is! Catastrophe periodically polls the feed and publishes all new events as JSON to all connected WebSocket clients. Additionally this project allowed me to try out Go and GitHub actions.
