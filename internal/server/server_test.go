@@ -19,11 +19,11 @@ func createEvent() *feed.Event {
 	}
 }
 
-func createClient(path string, host string, port int, t *testing.T) *websocket.Conn {
+func createClient(host string, port int, t *testing.T) *websocket.Conn {
 	url := url.URL{
 		Scheme: "ws",
 		Host:   fmt.Sprintf("%s:%d", host, port),
-		Path:   path,
+		Path:   "/websocket",
 	}
 
 	// Attempt to connect until the server is up and responding
@@ -58,7 +58,7 @@ func TestServer(t *testing.T) {
 
 	t.Run("test that server publishes events to connected clients", func(t *testing.T) {
 
-		client := createClient("/websocket", host, port, t)
+		client := createClient(host, port, t)
 		defer client.Close()
 
 		publishedEvents := make(chan *feed.Event)

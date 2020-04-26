@@ -49,20 +49,16 @@ func (s *WebSocketServer) Publish(event *feed.Event) {
 	s.group.Broadcast(event)
 }
 
-func (s *WebSocketServer) addConnection(conn *websocket.Conn) {
-	s.group.Add(conn)
-	log.WithFields(log.Fields{
-		"connections": s.group.Count(),
-	}).Info("New connection")
-}
-
 func (s *WebSocketServer) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Warn("Failed to upgrade WebSocket connection")
 		return
 	}
-	s.addConnection(conn)
+	s.group.Add(conn)
+	log.WithFields(log.Fields{
+		"connections": s.group.Count(),
+	}).Info("New connection")
 }
 
 // Shutdown closes all WebSocket connections and shuts down the server
