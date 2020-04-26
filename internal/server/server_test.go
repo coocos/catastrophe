@@ -25,15 +25,20 @@ func createClient(path string, host string, port int, t *testing.T) *websocket.C
 		Host:   fmt.Sprintf("%s:%d", host, port),
 		Path:   path,
 	}
-	connection, response, err := websocket.DefaultDialer.Dial(url.String(), nil)
-	if err != nil {
-		t.Errorf("Failed to connect to server %s", err)
-	}
-	if response.StatusCode != http.StatusSwitchingProtocols {
-		t.Error("WebSocket connection not upgraded")
+
+	// Attempt to connect until the server is up and responding
+	for {
+		connection, response, err := websocket.DefaultDialer.Dial(url.String(), nil)
+		if err != nil || response == nil {
+			time.Sleep(10 * time.Millisecond)
+			continue
+		}
+		if response.StatusCode != http.StatusSwitchingProtocols {
+			t.Error("WebSocket connection not upgraded")
+		}
+		return connection
 	}
 
-	return connection
 }
 
 func createServer(host string, port int) *WebSocketServer {
